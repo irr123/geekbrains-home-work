@@ -1,6 +1,7 @@
 import random
 import functools
 import logging
+from . import log as logger
 
 
 def log(name):
@@ -44,11 +45,18 @@ class ListTransaction(object):
             self.list = self.copy_ptr
         return True
 
+
 def singleton(fn):
-    instance = None
+    instances = {}
+
+    @functools.wraps(fn)
     def wrapper(*args, **kwargs):
+        nonlocal instances
+        instance = instances.get(fn.__name__)
         if not instance:
             instance = fn()
+            logger.LOGGER.debug('Make new instance of {}'.format(fn.__name__))
+            instances[fn.__name__] = instance
         return instance
     return wrapper
 

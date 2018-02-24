@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 
-import logging
 import argparse
 import src
-# import example
 
 
 AVAILABLE_WORKERS = {
-    'client': lambda x: src.socket_client.process,
-    'fn-server': lambda x: src.socket_server.process(blocking=x),
-    'cl-server': lambda x: src.socket_server_sync.process
+    'fn-client': lambda bl: lambda addr, port:
+    src.socket_client.fn_process(addr, port, bl),
+
+    'fn-server': lambda bl: lambda addr, port:
+    src.socket_server.process(addr, port, blocking=bl),
+
+    'cl-server': lambda bl: lambda addr, port:
+    src.socket_server_sync.process(addr, port),
+
+    'server': lambda bl: lambda addr, port:
+    src.socket_server_async.process(addr, port, blocking=bl),
+
+    'client': lambda bl: lambda addr, port:
+    src.socket_client.process(addr, port, blocking=bl)
 }
 
 
@@ -19,6 +28,9 @@ def parce_params():
         'mode', type=str,
         help='mode is one of [{}]'.format(
             ', '.join(AVAILABLE_WORKERS.keys())))
+
+    parser.add_argument('-address', type=str, default='127.0.0.1')
+    parser.add_argument('-port', type=int, default=8000)
 
     parser.add_argument(
         '--blocking', type=int, default=1,
@@ -39,12 +51,12 @@ def main():
     worker = AVAILABLE_WORKERS.get(
         args.mode,
         lambda x: lambda: print('`{}`-mode not found'.format(args.mode)))
-    worker(args.blocking)()
+    worker(args.blocking)(args.address, args.port)
 
 
 if __name__ == '__main__':
     main()
-    # new_fn = example.averager()
+    # new_fn = src.example.averager()
     # help(new_fn)
     # new_fn('param1', 100)
     # new_fn('param2', 100, min=100, max=200)
