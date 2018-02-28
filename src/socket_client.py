@@ -32,14 +32,6 @@ def fn_process(address='', port=8888, blocking=False):
 
 
 class BackgroundClient(object):
-    @staticmethod
-    def deserialize_msg(msg: bytes) -> str:
-        return msg.decode('utf-8')
-
-    @staticmethod
-    def serialize_msg(msg: str) -> bytes:
-        return msg.encode('utf-8')
-
     def __init__(self, address, port, conn_factory, in_queue, out_queue):
         self.is_running = False
         self.addr_port = (address, port)
