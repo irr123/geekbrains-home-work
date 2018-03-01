@@ -40,6 +40,7 @@ class BlockingConnection(IConnection):
         self._addr_port = addr_port
         self._is_valid = True
         self._socket = socket_
+        self._fail_count = 0
 
     def __str__(self) -> str:
         mark = ''
@@ -76,6 +77,14 @@ class BlockingConnection(IConnection):
             log.LOGGER.debug(
                 'Exception <{}> happens while read from {}:{}'
                 .format(ex, *self.addr_port))
+        if not ret:
+            self._fail_count += 1
+            if self._fail_count > 3:
+                self._is_valid = False
+                log.LOGGER.info(
+                    'Mark {}:{} as FAILED'.format(*self.addr_port))
+        else:
+            self._fail_count = 0
         log.LOGGER.debug('Read {} from {}:{}'.format(ret, *self.addr_port))
         return ret
 
@@ -95,12 +104,13 @@ class BlockingConnection(IConnection):
             'Closing {} with {}:{}'
             .format(self.__class__.__name__, *self.addr_port))
         try:
+            self._socket.shutdown(socket.SHUT_RDWR)
             return self._socket.close()
         except Exception as ex:
             self._is_valid = False
             log.LOGGER.debug(
                 'Exception <{}> happens while closing {}:{}'
-                .format(ex, self.addr_port))
+                .format(ex, *self.addr_port))
         return None
 
 
@@ -110,17 +120,27 @@ class Connection(BlockingConnection):
     def is_ready_to_read(self) -> bool:
         if not self.is_valid:
             return False
-
-        r, w, e = select.select(
-            (self._socket,), tuple(), tuple(), self.wait_timeout)
+        try:
+            r, w, e = select.select(
+                (self._socket,), tuple(), tuple(), self.wait_timeout)
+        except Exception as ex:
+            r = False
+            log.LOGGER.warn(
+                'Exception <{}> happens while check is ready to read {}:{}'
+                .format(ex, *self.addr_port))
         return bool(r)
 
     def is_ready_to_write(self) -> bool:
         if not self.is_valid:
             return False
-
-        r, w, e = select.select(
-            tuple(), (self._socket,), tuple(), self.wait_timeout)
+        try:
+            r, w, e = select.select(
+                tuple(), (self._socket,), tuple(), self.wait_timeout)
+        except Exception as ex:
+            w = False
+            log.LOGGER.warn(
+                'Exception <{}> happens while check is ready to write {}:{}'
+                .format(ex, *self.addr_port))
         return bool(w)
 
 

@@ -1,5 +1,6 @@
 from . import log
 from . import connection
+from . import proto
 
 
 class SocketServerAsync(object):
@@ -7,14 +8,18 @@ class SocketServerAsync(object):
     def deserialize_msg(msg: bytes) -> str:
         return msg.encode('utf-8')
 
-    def __init__(self, address, port, conn_factory):
+    def __init__(self, address, port, conn_factory, protocol):
         self.is_running = False
         self.addr_port = (address, port)
         self.conn_fab = conn_factory
+        self.proto = protocol
 
     def listen_and_answer(self, conn: connection.IConnection, use_blocking):
         if conn.is_ready_to_read():
             client_conn = conn.accept(use_blocking)
+            if client_conn.is_ready_to_write():
+                client_conn.write(
+                    self.proto.make_resp_info('Success').serialize())
 
         for client_conn in self.conn_fab.get_all_clients(
                 exclude_addr_port=[self.addr_port]):
@@ -24,14 +29,21 @@ class SocketServerAsync(object):
                 continue
 
             if client_conn.is_ready_to_read():
-                message = client_conn.read()
-                if not message:
+                raw_message = client_conn.read()
+                if not raw_message:
                     continue
+
+                message = self.proto.deserialize(raw_message)
+                if client_conn.is_ready_to_write() and \
+                   message.dst == 'default':
+                    client_conn.write(self.proto.make_resp_ok().serialize())
+                else:
+                    log.LOGGER.debug('Drop {}'.format(message))
 
                 for other_client_conn in self.conn_fab.get_all_clients(
                         [self.addr_port, client_conn.addr_port]):
                     if other_client_conn.is_ready_to_write():
-                        other_client_conn.write(message)
+                        other_client_conn.write(message.serialize())
 
     def stop(self):
         self.is_running = False
@@ -50,5 +62,6 @@ class SocketServerAsync(object):
 
 def process(address='127.0.0.1', port=8888, blocking=False):
     srv = SocketServerAsync(
-        address, port, connection.ConnectionFab())
+        address, port, connection.ConnectionFab(),
+        proto.MessageFab('Main-srv'))
     srv.execute(blocking)

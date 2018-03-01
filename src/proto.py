@@ -16,42 +16,49 @@ class IMessage(abc.ABC):
         pass
 
 
-class Responce(IMessage):
+class AbstractMessage(IMessage):
+    def serialize(self) -> bytes:
+        return str(self).encode('utf-8')
+
+
+class Responce(AbstractMessage):
     def __init__(self, code: int, msg: str, time: int):
         assert code in proto_codes.ProtoCodes, 'Unknown code {}'.format(code)
+        log.LOGGER.debug('Made {} of {}'.format(self.__class__.__name__, code))
         self.code = code
         self.msg = msg
         self.time = time
 
-    def serialize(self) -> bytes:
+    def __str__(self):
         return json.dumps({
             'code': self.code,
             'msg': self.msg,
             'time': self.time
-        }).encode('utf-8')
+        })
 
     @classmethod
     def deserialize(cls, msg: bytes) -> 'Responce':
         return cls(**json.loads(msg.decode('utf-8')))
 
 
-class Request(IMessage):
+class Request(AbstractMessage):
     def __init__(self, act: str, src: str, dst: str, data: str, time: int):
         assert act in proto_codes.ProtoActions, 'Unknown action {}'.format(act)
+        log.LOGGER.debug('Made {} of {}'.format(self.__class__.__name__, act))
         self.act = act
         self.src = src
         self.dst = dst
         self.data = data
         self.time = time
 
-    def serialize(self) -> bytes:
+    def __str__(self):
         return json.dumps({
             'act': self.act,
             'src': self.src,
             'dst': self.dst,
             'data': self.data,
             'time': self.time
-        }).encode('utf-8')
+        })
 
     @classmethod
     def deserialize(cls, msg: bytes) -> 'Request':

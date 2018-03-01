@@ -1,8 +1,10 @@
 import socket
 import threading
 import queue
+import random
 from . import connection
 from . import log
+from . import proto
 
 
 def make_tcp_socket(address: str = 'localhost',
@@ -32,12 +34,14 @@ def fn_process(address='', port=8888, blocking=False):
 
 
 class BackgroundClient(object):
-    def __init__(self, address, port, conn_factory, in_queue, out_queue):
+    def __init__(
+            self, address, port, conn_factory, protocol, in_queue, out_queue):
         self.is_running = False
         self.addr_port = (address, port)
         self.conn_fab = conn_factory
         self.in_queue = in_queue
         self.out_queue = out_queue
+        self.proto = protocol
 
     def listen_and_messaging(
             self, conn: connection.IConnection, use_blocking=False):
@@ -45,12 +49,13 @@ class BackgroundClient(object):
             message = conn.read()
             if message:
                 # self.in_queue.put(self.deserialize_msg(message))
-                print('[Received]: {}'.format(self.deserialize_msg(message)))
+                print('[Received]: {}'.format(
+                    self.proto.deserialize(message)))
 
         if conn.is_ready_to_write():
             if not self.out_queue.empty():
-                message = self.out_queue.get()
-                conn.write(self.serialize_msg(message))
+                msg = self.out_queue.get()
+                conn.write(self.proto.make_req_msg('default', msg).serialize())
 
     def stop(self):
         self.is_running = False
@@ -70,12 +75,12 @@ class BackgroundClient(object):
 
 class Client(object):
     def __init__(
-            self, address, port, conn_factory,
+            self, address, port, conn_factory, protocol,
             in_queue, out_queue, use_blocking=False):
         self.in_queue = in_queue
         self.out_queue = out_queue
         self.client = BackgroundClient(
-            address, port, conn_factory, in_queue, out_queue)
+            address, port, conn_factory, protocol, in_queue, out_queue)
         self.thread = threading.Thread(
             target=self.client.execute,
             kwargs={'use_blocking': use_blocking})
@@ -101,7 +106,9 @@ class Client(object):
 
 def process(address, port, blocking=False):
     fab = connection.ConnectionFab()
+    protocol = proto.MessageFab('client-{}'.format(random.randint(0, 99)))
     in_queue = queue.Queue()
     out_queue = queue.Queue()
-    client = Client(address, port, fab, in_queue, out_queue, blocking)
+    client = Client(
+        address, port, fab, protocol, in_queue, out_queue, blocking)
     client.execute()

@@ -55,7 +55,9 @@ def singleton(fn):
         instance = instances.get(fn.__name__)
         if not instance:
             instance = fn()
-            logger.LOGGER.debug('Make new instance of {}'.format(fn.__name__))
+            logger.LOGGER.debug(
+                'Make new instance of {} with {} and {}'
+                .format(fn.__name__, args, kwargs))
             instances[fn.__name__] = instance
         return instance
     return wrapper
