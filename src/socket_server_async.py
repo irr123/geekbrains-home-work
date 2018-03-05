@@ -1,6 +1,7 @@
 from . import log
 from . import connection
 from . import proto
+from . import models
 
 
 class SocketServerAsync(object):
@@ -20,6 +21,7 @@ class SocketServerAsync(object):
             if client_conn.is_ready_to_write():
                 client_conn.write(
                     self.proto.make_resp_info('Success').serialize())
+                models.add_client(client_conn.addr_port)
 
         for client_conn in self.conn_fab.get_all_clients(
                 exclude_addr_port=[self.addr_port]):
@@ -33,7 +35,10 @@ class SocketServerAsync(object):
                 if not raw_message:
                     continue
 
+                client = models.get_client_by_addr(client_conn.addr_port)
                 message = self.proto.deserialize(raw_message)
+                models.add_message(client, message.data)
+
                 if client_conn.is_ready_to_write() and \
                    message.dst == 'default':
                     client_conn.write(self.proto.make_resp_ok().serialize())

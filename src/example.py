@@ -69,5 +69,13 @@ class Server(object):
 
 
 if __name__ == '__main__':
-    s1 = Server()
-    s2 = Server()
+    # s1 = Server()
+    # s2 = Server()
+
+    d = {
+        'a': 1,
+        'b': 2,
+        'c': 3
+    }
+    for key, value in d.items():
+        print(key, value)

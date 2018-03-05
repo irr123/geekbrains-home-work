@@ -5,6 +5,7 @@ import random
 from . import connection
 from . import log
 from . import proto
+from . import models
 
 
 def make_tcp_socket(address: str = 'localhost',
@@ -66,6 +67,9 @@ class BackgroundClient(object):
         self.is_running = True
         sock = make_tcp_socket(*self.addr_port, use_blocking)
         conn = self.conn_fab.add_connection(self.addr_port, sock, use_blocking)
+        for msg in models.get_msgs_by_client_addr(conn.addr_port):
+            print(msg)
+
         while self.is_running:
             try:
                 self.listen_and_messaging(conn, use_blocking)
