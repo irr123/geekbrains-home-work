@@ -18,7 +18,10 @@ AVAILABLE_WORKERS = {
     src.socket_server_async.process(addr, port, blocking=bl),
 
     'client': lambda bl: lambda addr, port:
-    src.socket_client.process(addr, port, blocking=bl)
+    src.socket_client.process(addr, port, blocking=bl),
+
+    'gui-client': lambda bl: lambda addr, port:
+    src.socket_client_gui.process(addr, port, blocking=bl)
 }
 
 

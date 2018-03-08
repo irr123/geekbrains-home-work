@@ -7,7 +7,9 @@ from sqlalchemy.orm import sessionmaker, relationship
 from . import log
 
 
-DB_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'server.db')
+DB_PATH = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), 'server.db')
+
 log.LOGGER.debug('DB path: {}'.format(DB_PATH))
 engine = create_engine('sqlite:///{}'.format(DB_PATH), echo=False)
 session_maker = sessionmaker(bind=engine)
