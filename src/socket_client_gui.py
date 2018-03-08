@@ -29,7 +29,7 @@ class BackgroundClient(object):
                 if not isinstance(de_msg, proto.Request):
                     return
                 self.gui.r_handler(
-                    '[{}]{}:{}'.format(de_msg.time, *conn.addr_port),
+                    '[{}] {}'.format(de_msg.time, de_msg.src),
                     de_msg.data)
 
         if conn.is_ready_to_write():

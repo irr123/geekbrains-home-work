@@ -146,3 +146,11 @@ class MessageFab(object):
             proto_codes.ProtoCodes.internal_error,
             'Sorry, we\'re working on it :(',
             self._get_time)
+
+
+if __name__ == '__main__':
+    log.setup_logger('debug')
+    fab = MessageFab('client-name')
+    msg = fab.make_req_msg('dst', 'data')
+    print('msg1', msg)
+    print('msg2', msg.serialize())

@@ -1,3 +1,4 @@
+import time
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtCore, QtWidgets
 from . import log
@@ -31,7 +32,8 @@ class Ui_MainWindow(QMainWindow):
         self.textEdit.clear()
         log.LOGGER.debug(
             'sendHandler called, {}'.format(current_txt))
-        self.textBrowser.append('{} said: {}'.format('I', current_txt))
+        self.textBrowser.append(
+            '[{}] {} said: {}'.format(time.time(), 'I', current_txt))
         self.send_callback(current_txt)
 
     def receiveHandler(self, who, msg):

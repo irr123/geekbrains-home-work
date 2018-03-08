@@ -54,7 +54,7 @@ def singleton(fn):
         nonlocal instances
         instance = instances.get(fn.__name__)
         if not instance:
-            instance = fn()
+            instance = fn(*args, **kwargs)
             logger.LOGGER.debug(
                 'Make new instance of {} with {} and {}'
                 .format(fn.__name__, args, kwargs))
