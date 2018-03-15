@@ -91,7 +91,7 @@ class BlockingConnection(IConnection):
     def write(self, data: bytes) -> int:
         log.LOGGER.debug('Writting {} to {}:{}'.format(data, *self.addr_port))
         try:
-            return self._socket.send(data)
+            return self._socket.sendall(data)
         except Exception as ex:
             self._is_valid = False
             log.LOGGER.debug(

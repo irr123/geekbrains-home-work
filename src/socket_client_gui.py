@@ -4,6 +4,7 @@ import random
 from . import connection
 from . import log
 from . import proto
+from . import proto_codes
 from . import models
 from . import socket_client
 from . import simple_ui
@@ -19,6 +20,8 @@ class BackgroundClient(object):
         self.out_queue = out_queue
         self.proto = protocol
         self.gui = None
+        self.key = None
+        self.not_authen = True
 
     def listen_and_messaging(
             self, conn: connection.IConnection, use_blocking=False):
@@ -26,18 +29,26 @@ class BackgroundClient(object):
             msg = conn.read()
             if msg:
                 de_msg = self.proto.deserialize(msg)
-                if not isinstance(de_msg, proto.Request):
-                    return
-                self.gui.r_handler(
-                    '[{}] {}'.format(de_msg.time, de_msg.src),
-                    de_msg.data)
+                if isinstance(de_msg, proto.Responce):
+                    if de_msg.code == proto_codes.ProtoCodes.important_info:
+                        log.LOGGER.info('Set key {}'.format(de_msg.msg))
+                        self.key = de_msg.msg
+                else:
+                    self.gui.r_handler(
+                        '[{}] {}'.format(de_msg.time, de_msg.src),
+                        self.proto.decrypt(de_msg.data, self.key))
 
         if conn.is_ready_to_write():
-            if not self.out_queue.empty():
+            if self.not_authen and (not self.key):
+                conn.write(self.proto.make_req_authenticate().serialize())
+                self.not_authen = False
+            elif not self.out_queue.empty():
                 msg = self.out_queue.get()
                 if not msg:
                     return
-                conn.write(self.proto.make_req_msg('default', msg).serialize())
+                msg_object = self.proto.make_req_msg('default', msg)
+                msg_object.data = self.proto.encrypt(msg_object.data, self.key)
+                conn.write(msg_object.serialize())
 
     def stop(self):
         self.is_running = False
@@ -54,7 +65,6 @@ class BackgroundClient(object):
             #     self.proto.deserialize(msg)))
             self.gui.r_handler('{}:{}'.format(*self.addr_port),
                                self.proto.deserialize(msg))
-
         while self.is_running:
             try:
                 self.listen_and_messaging(conn, use_blocking)

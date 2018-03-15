@@ -1,6 +1,7 @@
 import abc
 import time
 import json
+from . import pydes
 from . import proto_codes
 from . import example
 from . import log
@@ -70,6 +71,43 @@ class MessageFab(object):
     GROUP_IDENTIFER = '#'
     USER_DENTIFER = '@'
 
+    def encrypt(self, message: str, key: int):
+        if not message:
+            return message
+        res = ''
+        for c in message:
+            res += self.alpha[(self.alpha.index(c) + int(key)) % len(self.alpha)]
+        return res
+        # k = str(key).encode('ascii')
+        # if len(k) > 8:
+        #     k = k[8:]
+        # else:
+        #     k = k + (8 - len(k)) * b'8'
+        # m = message.encode('utf-8')
+        # if len(m) % 8:
+        #     print('do')
+        #     m = m + (len(m) % 8) * b'8'
+        # print(len(m))
+        # return self.chiper.encrypt(k, m)
+
+    def decrypt(self, message: str, key: int):
+        if not message:
+            return message
+        res = ''
+        for c in message:
+            res += self.alpha[(self.alpha.index(c) - int(key)) % len(self.alpha)]
+        return res
+        # k = str(key).encode('ascii')
+        # if len(k) > 8:
+        #     k = k[8:]
+        # else:
+        #     k = k + (8 - len(k)) * b'8'
+        # m = message.encode('utf-8')
+        # if len(m) % 8:
+        #     m = m + (len(m) % 8) * b'8'
+        # print(len(m))
+        # return self.chiper.decrypt(k, m)
+
     @staticmethod
     def deserialize(message: bytes) -> IMessage:
         exs = []
@@ -86,6 +124,8 @@ class MessageFab(object):
 
     def __init__(self, src=None):
         self.src = src
+        self.chiper = pydes.des()
+        self.alpha = ' abcdefghijklmnopqrstuvwxyz'
 
     @property
     def _get_time(self):
@@ -96,7 +136,7 @@ class MessageFab(object):
             proto_codes.ProtoActions.presence,
             self.src, dst, data, self._get_time)
 
-    def make_req_prоbe(self, dst=None, data=None):
+    def make_req_probe(self, dst=None, data=None):
         return Request(
             proto_codes.ProtoActions.probe,
             self.src, dst, data, self._get_time)
@@ -126,10 +166,20 @@ class MessageFab(object):
             proto_codes.ProtoActions.leave,
             self.src, dst, data, self._get_time)
 
+    def make_req_auth(self, dst=None, data=None):
+        return Request(
+            proto_codes.ProtoActions.authenticate,
+            self.src, dst, data, self._get_time)
+
     def make_resp_info(self, msg='Base info'):
         return Responce(
             proto_codes.ProtoCodes.base_info,
             msg, self._get_time)
+
+    def make_resp_auth_ok(self, key):
+        return Responce(
+            proto_codes.ProtoCodes.important_info,
+            key, self._get_time)
 
     def make_resp_ok(self):
         return Responce(
@@ -154,3 +204,7 @@ if __name__ == '__main__':
     msg = fab.make_req_msg('dst', 'data')
     print('msg1', msg)
     print('msg2', msg.serialize())
+
+    en = fab.encrypt('hello my dr fr', 123)
+    de = fab.decrypt(en, 123)
+    print(en, de)

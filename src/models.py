@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy import Table, Column, \
-    Integer, Numeric, String, MetaData, ForeignKey
+from sqlalchemy import Column, \
+    Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from . import log
@@ -23,13 +23,15 @@ class Client(Base):
     clientid = Column(Integer, primary_key=True)
     clientaddress = Column(String)
     messages = relationship('Message', backref='Client')
+    clientkey = Column(String)
 
-    def __init__(self, clientaddress, messages):
+    def __init__(self, clientaddress, messages, clientkey=''):
         self.clientaddress = clientaddress
         self.messages = messages
+        self.clientkey = clientkey
 
     def __str__(self):
-        return '<{}>{}'.format(self.clientid, self.clientaddress)
+        return '<{}-{}>{}'.format(self.clientid, self.clientkey, self.clientaddress)
 
 
 class Message(Base):
@@ -49,12 +51,19 @@ class Message(Base):
 
 if not os.path.exists(DB_PATH):
     log.LOGGER.debug('Not exist, creating: {}'.format(DB_PATH))
-    Base.metadata.create_all(engine)
+
+Base.metadata.create_all(engine)
 
 
-def add_client(address, messages=[]):
-    c = Client('{}:{}'.format(*address), messages)
+def add_client(address, key='', messages=[]):
+    c = Client('{}:{}'.format(*address), messages, key)
     session.add(c)
+    session.commit()
+
+
+def add_client_key(client: Client, key):
+    client.clientkey = key
+    session.add(client)
     session.commit()
 
 

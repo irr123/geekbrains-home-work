@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+PRIVATE_KEY = '123qwety'
+
 _ProtoCodes = namedtuple('ProtoCodes', [
     'base_info', 'important_info', 'ok',
     'created', 'accepted', 'invalid_request',
@@ -12,9 +14,9 @@ ProtoCodes = _ProtoCodes(
     403, 404, 409, 410, 500)
 
 _ProtoActions = namedtuple('ProtoActions', [
-    'presence', 'prоbe', 'msg', 'quit',
+    'presence', 'probe', 'msg', 'quit',
     'authenticate', 'join', 'leave'])
 
 ProtoActions = _ProtoActions(
-    'presence', 'prоbe', 'msg', 'quit',
+    'presence', 'probe', 'msg', 'quit',
     'authenticate', 'join', 'leave')

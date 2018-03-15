@@ -1,6 +1,9 @@
 import random
 import functools
 import logging
+import threading
+import queue
+import time
 from . import log as logger
 
 
@@ -65,17 +68,49 @@ def singleton(fn):
 
 @singleton
 class Server(object):
-    pass
+    def __init__(self):
+        self.data = []
+
+    def do(self):
+        return '@'.join(self.data)
+
+    def change_callback(self, data):
+        print('change_callback')
+        self.data.append(data)
+
+    def clear_callback(self):
+        print('clear_callback')
+        self.data = []
+
+
+STOP_FLAG = False
+
+
+def put_data_into_queue(queue_: queue.Queue):
+    s = Server()
+    for i in range(100):
+        print('Put {} into queue, with {}'.format(i, s.do()))
+        queue_.put(i)
+        if STOP_FLAG:
+            break
+        time.sleep(1)
 
 
 if __name__ == '__main__':
-    # s1 = Server()
+    s1 = Server()
     # s2 = Server()
 
-    d = {
-        'a': 1,
-        'b': 2,
-        'c': 3
-    }
-    for key, value in d.items():
-        print(key, value)
+    q = queue.Queue()
+    thread = threading.Thread(target=put_data_into_queue, args=(q,))
+    thread.start()
+    try:
+        while True:
+            i = q.get()
+            print('Get {} from queue'.format(i))
+            if i % 8:
+                s1.change_callback('string-'.format(i))
+            if i % 2:
+                s1.clear_callback()
+    except KeyboardInterrupt:
+        STOP_FLAG = True
+        thread.join()
